@@ -1,4 +1,5 @@
 const Request = require('../models/Request');
+const Student = require('../models/Student');
 
 class RequestController {
   static async getAllRequests(req, res) {
@@ -253,12 +254,97 @@ class RequestController {
           error: 'Request has already been reviewed'
         });
       }
+
+      // Find the student
+      const student = await Student.findOne({ userId: request.studentId.toString() });
       
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          error: 'Student not found'
+        });
+      }
+
+      // Add the approved item to student's ownership based on request type
+      switch (request.type) {
+        case 'course':
+          // Check if student already has this course
+          const existingCourse = student.enrolledCourses.find(
+            course => course.courseId === request.courseId.toString()
+          );
+          
+          if (!existingCourse) {
+            const courseData = {
+              courseId: request.courseId.toString(),
+              enrolledAt: new Date(),
+              accessType: request.accesType, // Note: typo in your schema - should be accessType
+              progress: []
+            };
+            
+            // Set endAt only for temporary access
+            if (request.accesType === 'temporary') {
+              courseData.endAt = request.accessUntil;
+            }
+            
+            student.enrolledCourses.push(courseData);
+          }
+          break;
+
+        case 'chapter':
+          // Check if student already has this chapter
+          const existingChapter = student.enrolledChapters.find(
+            chapter => chapter.courseId === request.courseId.toString() && 
+                      chapter.chapterId === request.chapterId.toString()
+          );
+          
+          if (!existingChapter) {
+            const chapterData = {
+              courseId: request.courseId.toString(),
+              chapterId: request.chapterId.toString(),
+              enrolledAt: new Date(),
+              accessType: request.accesType, // Note: typo in your schema - should be accessType
+              watchedLessons: []
+            };
+            
+            // Set endAt only for temporary access
+            if (request.accesType === 'temporary') {
+              chapterData.endAt = request.accessUntil;
+            }
+            
+            student.enrolledChapters.push(chapterData);
+          }
+          break;
+
+        case 'book':
+          // Check if student already has this book
+          const existingBook = student.boughtBooks.find(
+            book => book.bookId === request.bookId.toString()
+          );
+          
+          if (!existingBook) {
+            student.boughtBooks.push({
+              bookId: request.bookId.toString(),
+              purchasedAt: new Date()
+            });
+          }
+          break;
+
+        default:
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid request type'
+          });
+      }
+
+      // Save the student with new ownership
+      await student.save();
+
+      // Approve the request
       await request.approve();
       
       res.json({
         success: true,
-        message: 'Request approved successfully',
+        message: 'Request approved successfully and access granted to student',
         request
       });
     } catch (error) {
