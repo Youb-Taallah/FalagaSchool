@@ -32,7 +32,7 @@ const RejectModal = ({ isOpen, onClose, onConfirm }: RejectModalProps) => {
                     Please provide a reason for rejecting this request. This will be visible to the student.
                   </p>
                   <textarea
-                    className="mt-3 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    className="mt-3 p-3 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                     rows={4}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}

@@ -1,7 +1,7 @@
 import { useState, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import useStudentStore from '../../stores/student/studentStore';
-import { createStudent } from "../../services/studentService"
+import { createStudent } from "../../services/student/studentService"
 
 interface FormData {
   name: string;

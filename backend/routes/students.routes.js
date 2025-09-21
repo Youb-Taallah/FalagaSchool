@@ -24,14 +24,53 @@ router.use(requireAuth);
 router.use(syncUserData);
 router.use(requireActiveUser);
 
-// Get all students (admin/instructor only)
-router.get('/', requireRole(['admin', 'instructor']), StudentController.getAllStudents);
+// -------------------------- Admin accessible Routes --------------------------
+
+// Get all students (admin only)
+router.get('/', requireRole(['admin']), StudentController.getAllStudents);
 
 // Get student by ID
-router.get('/:id', StudentController.getStudentById);
+router.get('/:id',requireRole(['admin', 'student']), StudentController.getStudentById);
 
 // Get student by userId
-router.get('/user/:userId', StudentController.getStudentByUserId);
+router.get('/user/:userId',requireRole(['admin', 'student']), StudentController.getStudentByUserId);
+
+// Update student
+router.put('/:id', requireRole(['admin', 'student']), validateUpdateStudent, StudentController.updateStudent);
+
+// Delete student (admin only)
+router.delete('/:id', requireRole(['admin', 'student']), StudentController.deleteStudent);
+
+// Suspend student (admin only)
+router.patch('/:id/suspend', requireRole(['admin']), StudentController.suspendStudent);
+
+// Activate student (admin only)
+router.patch('/:id/activate', requireRole(['admin']), StudentController.activateStudent);
+
+// Enroll student in course (admin only)
+router.post('/:id/enroll/course', requireRole(['admin']), validateEnrollment, StudentController.enrollInCourse);
+
+// Enroll student in chapter (admin only)
+router.post('/:id/enroll/chapter', requireRole(['admin']), validateChapterEnrollment, StudentController.enrollInChapter);
+
+// Buy book (admin only)
+router.post('/:id/books', requireRole(['admin']), [body('bookId').notEmpty().withMessage('Book ID is required')], StudentController.buyBook);
+
+// Get student progress for a course
+router.get('/:id/progress/:courseId', requireRole(['admin', 'student']), StudentController.getCourseProgress);
+
+// Get student progress for a chapter
+router.get('/:id/progress/:courseId/:chapterId', requireRole(['admin', 'student']), StudentController.getChapterProgress);
+
+
+
+// -------------------------- Student accessible Routes --------------------------
+
+// Get student by ID
+router.get('/:id',requireRole(['admin', 'student']), StudentController.getStudentById);
+
+// Get student by userId
+router.get('/user/:userId',requireRole(['admin', 'student']), StudentController.getStudentByUserId);
 
 // Create student
 router.post('/', requireRole(['student']), validateStudent, StudentController.createStudent);
@@ -40,27 +79,16 @@ router.post('/', requireRole(['student']), validateStudent, StudentController.cr
 router.put('/:id', requireRole(['admin', 'student']), validateUpdateStudent, StudentController.updateStudent);
 
 // Delete student (admin only)
-router.delete('/:id', requireRole(['admin']), StudentController.deleteStudent);
-
-// Suspend student (admin only)
-router.patch('/:id/suspend', requireRole(['admin']), StudentController.suspendStudent);
-
-// Activate student (admin only)
-router.patch('/:id/activate', requireRole(['admin']), StudentController.activateStudent);
-
-// Enroll student in course
-router.post('/:id/enroll/course', validateEnrollment, StudentController.enrollInCourse);
-
-// Enroll student in chapter
-router.post('/:id/enroll/chapter', validateChapterEnrollment, StudentController.enrollInChapter);
+router.delete('/:id', requireRole(['admin', 'student']), StudentController.deleteStudent);
 
 // Mark lesson as watched
-router.post('/:id/progress/lesson', validateLessonProgress, StudentController.markLessonWatched);
+router.post('/:id/progress/lesson', requireRole(['student']), validateLessonProgress, StudentController.markLessonWatched);
 
 // Get student progress for a course
-router.get('/:id/progress/:courseId', StudentController.getStudentProgress);
+router.get('/:id/progress/:courseId', requireRole(['admin', 'student']), StudentController.getCourseProgress);
 
-// Buy book
-router.post('/:id/books', [body('bookId').notEmpty().withMessage('Book ID is required')], StudentController.buyBook);
+// Get student progress for a chapter
+router.get('/:id/progress/:courseId/:chapterId', requireRole(['admin', 'student']), StudentController.getChapterProgress);
+
 
 module.exports = router;

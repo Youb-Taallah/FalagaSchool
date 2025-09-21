@@ -206,4 +206,4 @@ export const activateUser = async (token: string, id: string): Promise<UserRespo
 };
 
 // Re-export getProfile from authService for convenience
-export { getProfile } from './authService';
+export { getProfile } from './auth/authService';

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSignIn, useUser, useAuth } from "@clerk/clerk-react";
 import { toast } from "react-toastify";
-import { login } from "../../services/authService";
+import { login } from "../../services/auth/authService";
 import images from "../../utils/images";
 
 export default function LoginPage() {

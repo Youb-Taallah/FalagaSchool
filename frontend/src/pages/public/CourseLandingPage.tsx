@@ -115,13 +115,13 @@ export default function CourseLandingPage() {
             
             <div className="space-y-4">
               {course?.chapters.map((chapter) => (
-                <div key={chapter.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                <div key={chapter._id} className="border border-gray-200 rounded-lg overflow-hidden">
                   <div 
                     className="flex justify-between items-center p-4 cursor-pointer bg-gray-50 hover:bg-gray-100"
-                    onClick={() => toggleChapter(chapter.id)}
+                    onClick={() => toggleChapter(chapter._id)}
                   >
                     <div className="flex items-center">
-                      {expandedChapter === chapter.id ? 
+                      {expandedChapter === chapter._id ? 
                         <ChevronDown size={20} className="mr-2 text-blue-600" /> : 
                         <ChevronRight size={20} className="mr-2 text-blue-600" />
                       }
@@ -132,17 +132,17 @@ export default function CourseLandingPage() {
                     </div>
                   </div>
                   
-                  {expandedChapter === chapter.id && (
+                  {expandedChapter === chapter._id && (
                     <div className="border-t border-gray-200">
                       {chapter.sections.map((section) => (
-                        <div key={section.id} className="border-b border-gray-200 last:border-b-0">
+                        <div key={section._id} className="border-b border-gray-200 last:border-b-0">
                           <div className="p-4 bg-gray-50">
                             <h4 className="font-medium">{chapter.position}.{section.position} {section.title}</h4>
                           </div>
                           
                           <div>
                             {section.lessons.map((lesson) => (
-                              <div key={lesson.id} className="p-4 flex justify-between items-center border-t border-gray-100">
+                              <div key={lesson._id} className="p-4 flex justify-between items-center border-t border-gray-100">
                                 <div className="flex items-center">
                                   {lesson.preview ? (
                                     <Play size={16} className="mr-3 text-blue-600" />

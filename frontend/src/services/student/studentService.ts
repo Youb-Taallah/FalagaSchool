@@ -1,4 +1,4 @@
-import { Student} from "../types/student"
+import { Student} from "../../types/student"
 
 import { toast } from 'react-toastify';
 
@@ -12,17 +12,6 @@ interface StudentResponse {
   errors?: unknown[];
 }
 
-interface StudentsListResponse {
-  success: boolean;
-  data: Student[];
-  pagination: {
-    current: number;
-    pages: number;
-    total: number;
-  };
-  message?: string;
-  error?: string;
-}
 
 interface ProgressResponse {
   success: boolean;
@@ -35,15 +24,6 @@ interface ProgressResponse {
   error?: string;
 }
 
-// Request parameter interfaces
-interface GetAllStudentsParams {
-  page?: number;
-  limit?: number;
-  status?: 'active' | 'suspended';
-  educationLevel?: string;
-  city?: string;
-  search?: string;
-}
 
 interface CreateStudentData {
   name: string;
@@ -60,27 +40,10 @@ interface UpdateStudentData {
   avatar?: string;
 }
 
-interface CourseEnrollmentData {
-  courseId: string;
-  accessType: string;
-  endAt?: string;
-}
-
-interface ChapterEnrollmentData {
-  courseId: string;
-  chapterId: string;
-  accessType: string;
-  endAt?: string;
-}
-
 interface LessonProgressData {
   courseId: string;
   chapterId: string;
   lessonId: string;
-}
-
-interface BookPurchaseData {
-  bookId: string;
 }
 
 // Error handling helper
@@ -91,39 +54,6 @@ const handleError = async (res: Response): Promise<any> => {
   return data;
 };
 
-// Service functions
-export const getAllStudents = async ( token: string, params: GetAllStudentsParams = {} ): Promise<StudentsListResponse> => {
-  try {
-    const searchParams = new URLSearchParams();
-    
-    if (params.page) searchParams.append('page', params.page.toString());
-    if (params.limit) searchParams.append('limit', params.limit.toString());
-    if (params.status) searchParams.append('status', params.status);
-    if (params.educationLevel) searchParams.append('educationLevel', params.educationLevel);
-    if (params.city) searchParams.append('city', params.city);
-    if (params.search) searchParams.append('search', params.search);
-
-    const url = `${BASE_URL}?${searchParams.toString()}`;
-    
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!res.ok) return await handleError(res);
-    return await res.json();
-  } catch (error) {
-    toast.error('Network error while fetching students');
-    return {
-      success: false,
-      error: String(error),
-      data: [],
-      pagination: { current: 1, pages: 0, total: 0 }
-    };
-  }
-};
 
 export const getStudentById = async (token: string, id: string): Promise<StudentResponse> => {
   try {
@@ -273,54 +203,6 @@ export const activateStudent = async (token: string, id: string): Promise<Studen
   }
 };
 
-export const enrollInCourse = async ( token: string, studentId: string, enrollmentData: CourseEnrollmentData ): Promise<StudentResponse> => {
-  try {
-    const res = await fetch(`${BASE_URL}/${studentId}/enroll/course`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(enrollmentData)
-    });
-
-    if (!res.ok) return await handleError(res);
-    
-    const result = await res.json();
-    if (result.success) {
-      toast.success(result.message || 'Student enrolled in course successfully');
-    }
-    return result;
-  } catch (error) {
-    toast.error('Network error while enrolling in course');
-    return { success: false, error: String(error) };
-  }
-};
-
-export const enrollInChapter = async ( token: string, studentId: string, chapterData: ChapterEnrollmentData ): Promise<StudentResponse> => {
-  try {
-    const res = await fetch(`${BASE_URL}/${studentId}/enroll/chapter`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(chapterData)
-    });
-
-    if (!res.ok) return await handleError(res);
-    
-    const result = await res.json();
-    if (result.success) {
-      toast.success(result.message || 'Student enrolled in chapter successfully');
-    }
-    return result;
-  } catch (error) {
-    toast.error('Network error while enrolling in chapter');
-    return { success: false, error: String(error) };
-  }
-};
-
 export const markLessonWatched = async ( token: string, studentId: string, lessonData: LessonProgressData ): Promise<StudentResponse> => {
   try {
     const res = await fetch(`${BASE_URL}/${studentId}/progress/lesson`, {
@@ -361,32 +243,6 @@ export const getStudentProgress = async ( token: string, studentId: string, cour
     return { success: false, error: String(error) };
   }
 };
-
-export const buyBook = async ( token: string, studentId: string, bookData: BookPurchaseData ): Promise<StudentResponse> => {
-  try {
-    const res = await fetch(`${BASE_URL}/${studentId}/books`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(bookData)
-    });
-
-    if (!res.ok) return await handleError(res);
-    
-    const result = await res.json();
-    if (result.success) {
-      toast.success(result.message || 'Book purchased successfully');
-    }
-    return result;
-  } catch (error) {
-    toast.error('Network error while purchasing book');
-    return { success: false, error: String(error) };
-  }
-};
-
-// Utility functions
 // export const getCurrentStudent = async (token: string, userId: string): Promise<StudentResponse> => {
 //   return getStudentByUserId(token, userId);
 // };

@@ -1,57 +1,56 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Eye, XCircle, Book, Layers, GraduationCap, PlusCircle, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Modal } from '../../components/ui/modal';
 import { cn } from '../../components/utils';
 // import useStudentStore from '../../stores/student/userStore';
-import { Timestamp } from 'firebase/firestore';
 import { Request } from '../../types/request';
 
 // Demo data
 const DEMO_REQUESTS: Request[] = [
   {
-    id: '1',
+    _id: '1',
     studentId: '1',
     type: 'course',
     courseId: 'c1',
     title: 'Advanced Machine Learning Course',
     status: 'approved',
-    submittedAt:Timestamp.fromDate(new Date(1714521600 * 1000)),
+    submittedAt:(new Date(1714521600 * 1000)),
     price: 299,
     accesType: 'lifetime',
   },
   {
-    id: '2',
+    _id: '2',
     studentId: '1',
     type: 'book',
     bookId: 'b1',
     title: 'Cloud Computing Architectures',
     status: 'pending',
-    submittedAt: Timestamp.fromDate(new Date(1716940800 * 1000)),
+    submittedAt: (new Date(1716940800 * 1000)),
     price: 49,
   },
   {
-    id: '3',
+    _id: '3',
     studentId: '1',
     type: 'course',
     courseId: 'c2',
     title: 'Advanced Data Science',
     status: 'rejected',
-    submittedAt: Timestamp.fromDate(new Date(1715731200 * 1000)),
+    submittedAt: (new Date(1715731200 * 1000)),
     price: 399,
     accesType: 'temporary',
-    endUntil: Timestamp.fromDate(new Date(1731312000 * 1000)),
+    accessUntil: (new Date(1731312000 * 1000)),
     reason: 'Course prerequisites not met',
   },
   {
-    id: '4',
+    _id: '4',
     studentId: '1',
     type: 'book',
     bookId: 'b2',
     title: 'Cybersecurity Essentials',
     status: 'pending',
-    submittedAt: Timestamp.fromDate(new Date(1717372800 * 1000)),
+    submittedAt: (new Date(1717372800 * 1000)),
     price: 79,
   },
 ];
@@ -84,7 +83,7 @@ export function RequestsPage() {
     if (!selectedRequest) return;
     
     setRequests(prevRequests => 
-      prevRequests.filter(request => request.id !== selectedRequest.id)
+      prevRequests.filter(request => request._id !== selectedRequest._id)
     );
     setShowCancelModal(false);
     setSelectedRequest(null);
@@ -173,7 +172,7 @@ export function RequestsPage() {
               </thead>
               <tbody className="divide-y">
                 {filteredRequests.map(request => (
-                  <tr key={request.id} className="text-sm">
+                  <tr key={request._id} className="text-sm">
                     <td className="py-4">
                       <div className="flex items-center text-gray-600">
                         {getTypeIcon(request.type)}
@@ -182,7 +181,7 @@ export function RequestsPage() {
                     </td>
                     <td className="py-4">{request.title}</td>
                     <td className="py-4 text-gray-500">
-                      {request.submittedAt.toDate().toLocaleDateString()}
+                      {request.submittedAt.toLocaleDateString()}
                     </td>
                     <td className="py-4">
                       {getStatusBadge(request.status)}
@@ -252,7 +251,7 @@ export function RequestsPage() {
               <div>
                 <p className="text-sm text-gray-500">Submitted On</p>
                 <p className="font-medium">
-                  {selectedRequest.submittedAt.toDate().toLocaleDateString()}
+                  {selectedRequest.submittedAt.toLocaleDateString()}
                 </p>
               </div>
               
@@ -268,11 +267,11 @@ export function RequestsPage() {
                 </div>
               )}
               
-              {'endUntil' in selectedRequest && selectedRequest.endUntil && (
+              {'accessUntil' in selectedRequest && selectedRequest.accessUntil && (
                 <div>
                   <p className="text-sm text-gray-500">Access Until</p>
                   <p className="font-medium">
-                    {selectedRequest.endUntil.toDate().toLocaleDateString()}
+                    {selectedRequest.accessUntil.toLocaleDateString()}
                   </p>
                 </div>
               )}

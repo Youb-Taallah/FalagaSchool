@@ -74,8 +74,8 @@ const CourseChaptersPage = () => {
               
             return (
               <Link 
-                key={chapter.id}
-                to={`/student/course/${courseId}/chapter/${chapter.id}`}
+                key={chapter._id}
+                to={`/student/course/${courseId}/chapter/${chapter._id}`}
                 className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-duration-300 group"
               >
                 <div className="p-6">

@@ -276,9 +276,9 @@ const BooksPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {paginatedBooks.map(book => (
             <BookCard 
-              key={book.id} 
+              key={book._id} 
               book={book} 
-              onClick={() => handleBookClick(book.id)}
+              onClick={() => handleBookClick(book._id)}
             />
           ))}
         </div>

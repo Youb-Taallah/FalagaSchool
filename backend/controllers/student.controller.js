@@ -2,7 +2,7 @@ const Student = require('../models/Student');
 const { validationResult } = require('express-validator');
 
 class StudentController {
-  // Get all students (admin/instructor only)
+  // Get all students (admin only)
   static async getAllStudents(req, res) {
     try {
       const { 
@@ -295,11 +295,11 @@ class StudentController {
         });
       }
 
-      // Check if the authenticated user is the owner of this student record
-      if (req.user.role !== 'admin' && student.userId.toString() !== req.user._id.toString()) {
+      // Check if the authenticated user is admin
+      if (req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
-          message: 'Unauthorized: You can only update your own student record'
+          message: 'Unauthorized: You can only enroll in courses as admin'
         });
       }
 
@@ -445,8 +445,8 @@ class StudentController {
     }
   }
 
-  // Get student progress
-  static async getStudentProgress(req, res) {
+  // Get course progress
+  static async getCourseProgress(req, res) {
     try {
       const { courseId } = req.params;
       const student = await Student.findById(req.params.id);
@@ -487,6 +487,95 @@ class StudentController {
       res.status(500).json({
         success: false,
         message: 'Error fetching student progress',
+        error: error.message
+      });
+    }
+  }
+
+  // Get chapter progress
+  static async getChapterProgress(req, res) {
+    try {
+      const { courseId, chapterId } = req.params;
+      const student = await Student.findById(req.params.id);
+
+      if (!student) {
+        return res.status(404).json({
+          success: false,
+          message: 'Student not found'
+        });
+      }
+
+      // Check if the authenticated user is the owner of this student record
+      if (req.user.role !== 'admin' && student.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized: You can only view your own student record'
+        });
+      }
+
+      let chapterProgress = null;
+      let accessType = null;
+      let enrolledAt = null;
+      let endAt = null;
+
+      // First, check if student has individual chapter enrollment
+      const enrolledChapter = student.enrolledChapters.find(chapter => 
+        chapter.courseId === courseId && chapter.chapterId === chapterId
+      );
+
+      if (enrolledChapter) {
+        chapterProgress = {
+          chapterId: enrolledChapter.chapterId,
+          watchedLessons: enrolledChapter.watchedLessons
+        };
+        accessType = enrolledChapter.accessType;
+        enrolledAt = enrolledChapter.enrolledAt;
+        endAt = enrolledChapter.endAt;
+      } else {
+        // Check if student has access through full course enrollment
+        const enrolledCourse = student.enrolledCourses.find(course => course.courseId === courseId);
+        
+        if (enrolledCourse) {
+          const courseChapterProgress = enrolledCourse.progress.find(p => p.chapterId === chapterId);
+          
+          if (courseChapterProgress) {
+            chapterProgress = courseChapterProgress;
+            accessType = enrolledCourse.accessType;
+            enrolledAt = enrolledCourse.enrolledAt;
+            endAt = enrolledCourse.endAt;
+          }
+        }
+      }
+
+      if (!chapterProgress) {
+        return res.status(404).json({
+          success: false,
+          message: 'Student is not enrolled in this chapter'
+        });
+      }
+
+      // Check if access is still valid (for temporary access)
+      const hasValidAccess = accessType === 'lifetime' || (endAt && new Date() <= endAt);
+
+      res.json({
+        success: true,
+        data: {
+          studentId: student._id,
+          courseId,
+          chapterId,
+          progress: chapterProgress,
+          accessInfo: {
+            accessType,
+            enrolledAt,
+            endAt,
+            hasValidAccess
+          }
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching student chapter progress',
         error: error.message
       });
     }

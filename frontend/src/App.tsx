@@ -16,8 +16,8 @@ import { useCoursesStore } from "./stores/public/coursesStore";
 import { useAuthStore } from "./stores/authStore";
 import useStudentStore from "./stores/student/studentStore.ts";
 import { ToastContainer } from 'react-toastify';
-import { getProfile } from "./services/authService";
-import { getStudentByUserId } from "./services/studentService.ts"
+import { getProfile } from "./services/auth/authService.ts";
+import { getStudentByUserId } from "./services/student/studentService.ts"
 
 import "./App.css";
 

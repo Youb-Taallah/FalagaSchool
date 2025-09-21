@@ -87,7 +87,7 @@ import {
               {request.accesType === 'temporary' && request.accessUntil && (
                 <div className="flex items-center gap-2">
                   <div className="min-w-24 text-gray-500">End Date:</div>
-                  <div className="font-medium">{request.accessUntil.toDate().toLocaleDateString()}</div>
+                  <div className="font-medium">{request.accessUntil.toLocaleDateString()}</div>
                 </div>
               )}
             </div>
@@ -110,7 +110,7 @@ import {
               {request.accesType === 'temporary' && request.accessUntil && (
                 <div className="flex items-center gap-2">
                   <div className="min-w-24 text-gray-500">End Date:</div>
-                  <div className="font-medium">{request.accessUntil.toDate().toLocaleDateString()}</div>
+                  <div className="font-medium">{request.accessUntil.toLocaleDateString()}</div>
                 </div>
               )}
             </div>
@@ -133,7 +133,7 @@ import {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all duration-200 hover:shadow-md">
         <div 
           className="p-4 cursor-pointer" 
-          onClick={() => onToggle(request.id)}
+          onClick={() => onToggle(request._id)}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -154,7 +154,7 @@ import {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onApprove(request.id);
+                      onApprove(request._id);
                     }}
                     className="rounded-full h-9 w-9 flex items-center justify-center bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors"
                   >
@@ -163,7 +163,7 @@ import {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      onReject(request.id);
+                      onReject(request._id);
                     }}
                     className="rounded-full h-9 w-9 flex items-center justify-center bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors"
                   >

@@ -11,7 +11,7 @@ import { getInitials } from '../../utils';
 import { useAuthStore } from '../../../stores/authStore';
 import { useAuth } from '@clerk/clerk-react';
 import useStudentStore from '../../../stores/student/studentStore';
-import { updateStudent } from '../../../services/studentService';
+import { updateStudent } from '../../../services/student/studentService';
 
 type ProfileFormValues = {
   name: string;

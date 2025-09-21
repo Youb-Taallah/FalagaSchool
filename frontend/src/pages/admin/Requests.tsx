@@ -11,60 +11,59 @@ import { Request } from '../../types/request';
 import RequestCard from '../../components/admin/Requests/RequestCard';
 import RejectModal from '../../components/admin/Requests/RejectModal';
 import ApproveModal from '../../components/admin/Requests/ApproveModal';
-import { Timestamp } from 'firebase/firestore';
 
 // Mock data for demonstration - using type-safe structure
 const MOCK_REQUESTS: Request[] = [
   {
-    id: '1',
+    _id: '1',
     studentId: 'STD12345',
     title: 'Advanced JavaScript Course Access',
     status: 'pending',
-    submittedAt: Timestamp.fromDate(new Date('2025-04-28T10:30:00')),
+    submittedAt: new Date('2025-04-28T10:30:00'),
     price: 49.99,
     note: 'I need this course for my upcoming project.',
     type: 'course',
     courseId: 'JS-ADV-101',
     accesType: 'lifetime',
-    accessUntil: Timestamp.fromDate(new Date('2025-07-29'))
+    accessUntil: new Date('2025-07-29')
   },
   {
-    id: '2',
+    _id: '2',
     studentId: 'STD67890',
     title: 'React Fundamentals Chapter',
     status: 'pending',
-    submittedAt: Timestamp.fromDate(new Date('2025-04-29T14:15:00')),
+    submittedAt: new Date('2025-04-29T14:15:00'),
     price: 19.99,
     type: 'chapter',
     courseId: 'REACT-101',
     chapterId: 'CH-3',
     accesType: 'temporary',
-    accessUntil: Timestamp.fromDate(new Date('2025-07-29'))
+    accessUntil: new Date('2025-07-29')
   },
   {
-    id: '3',
+    _id: '3',
     studentId: 'STD54321',
     title: 'Data Structures & Algorithms Book',
     status: 'approved',
-    submittedAt: Timestamp.fromDate(new Date('2025-04-25T09:45:00')),
-    reviewedAt: Timestamp.fromDate(new Date('2025-04-26T11:20:00')),
+    submittedAt: new Date('2025-04-25T09:45:00'),
+    reviewedAt: new Date('2025-04-26T11:20:00'),
     price: 29.99,
     type: 'book',
     bookId: 'DSA-BOOK-123'
   },
   {
-    id: '4',
+    _id: '4',
     studentId: 'STD13579',
     title: 'Machine Learning Basics',
     status: 'rejected',
-    submittedAt: Timestamp.fromDate(new Date('2025-04-22T16:30:00')),
-    reviewedAt: Timestamp.fromDate(new Date('2025-04-23T10:05:00')),
+    submittedAt: new Date('2025-04-22T16:30:00'),
+    reviewedAt: new Date('2025-04-23T10:05:00'),
     price: 59.99,
     reason: 'Student already has access to similar content.',
     type: 'course',
     courseId: 'ML-101',
     accesType: 'lifetime',
-    accessUntil: Timestamp.fromDate(new Date('2025-07-29'))
+    accessUntil: new Date('2025-07-29')
   }
 ];
 // Main Requests Page Component
@@ -78,7 +77,7 @@ const RequestsPage = () => {
   const [expandedRequests, setExpandedRequests] = useState<Record<string, boolean>>({});
   
   // Get the selected request data
-  const selectedRequest = requests.find(req => req.id === selectedRequestId);
+  const selectedRequest = requests.find(req => req._id === selectedRequestId);
 
   // Filter requests based on status and search query
   const filteredRequests = requests.filter(request => {
@@ -91,7 +90,7 @@ const RequestsPage = () => {
       return (
         request.title.toLowerCase().includes(query) ||
         request.studentId.toLowerCase().includes(query) ||
-        request.id.toLowerCase().includes(query) ||
+        request._id.toLowerCase().includes(query) ||
         request.type.toLowerCase().includes(query) ||
         ('courseId' in request && request.courseId.toLowerCase().includes(query)) ||
         ('chapterId' in request && request.chapterId.toLowerCase().includes(query)) ||
@@ -102,7 +101,7 @@ const RequestsPage = () => {
     return true;
   });
   // Sort by submission date (newest first)
-  filteredRequests.sort((a, b) => b.submittedAt.toDate().getTime() - a.submittedAt.toDate().getTime());
+  filteredRequests.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
 
   const handleApprove = (requestId: string) => {
     setSelectedRequestId(requestId);
@@ -112,11 +111,11 @@ const RequestsPage = () => {
   const handleApproveConfirm = () => {
     setRequests(prevRequests => 
       prevRequests.map(req => 
-        req.id === selectedRequestId 
+        req._id === selectedRequestId 
           ? { 
               ...req, 
               status: 'approved',
-              reviewedAt: Timestamp.fromDate(new Date()),
+              reviewedAt: new Date(),
               reason: undefined
             } 
           : req
@@ -134,11 +133,11 @@ const RequestsPage = () => {
   const handleRejectConfirm = (reason: string) => {
     setRequests(prevRequests => 
       prevRequests.map(req => 
-        req.id === selectedRequestId 
+        req._id === selectedRequestId 
           ? { 
               ...req, 
               status: 'rejected',
-              reviewedAt: Timestamp.fromDate(new Date()),
+              reviewedAt: new Date(),
               reason: reason
             } 
           : req
@@ -290,12 +289,12 @@ const RequestsPage = () => {
           <div className="space-y-3">
             {filteredRequests.map((request) => (
               <RequestCard 
-                key={request.id} 
+                key={request._id} 
                 request={request as unknown as Request} 
                 onApprove={handleApprove} 
                 onReject={handleReject}
-                expanded={expandedRequests[request.id] || false}
-                onToggle={() => toggleExpandRequest(request.id)}
+                expanded={expandedRequests[request._id] || false}
+                onToggle={() => toggleExpandRequest(request._id)}
               />
             ))}
           </div>

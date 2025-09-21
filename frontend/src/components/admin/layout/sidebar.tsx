@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Home, MessageSquareText, Users, GraduationCap, MonitorPlay  } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, MessageSquareText, Users, GraduationCap, BookOpen, MonitorPlay  } from 'lucide-react';
 import { cn } from '../../utils';
 import { SidebarItem } from '../../student/layout/sidebar-item';
-// import { getInitials } from '../utils';
 import images from '../../../utils/images';
 import { Link } from 'react-router-dom';
 
@@ -14,31 +13,34 @@ export function Sidebar({ onCollapse }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
 
+  // Table of sidebar items
+  const sidebarItems = [
+    { icon: <Home size={20} />, label: "Dashboard", to: "/admin" },
+    { icon: <BookOpen size={20} />, label: "Courses", to: "/admin/courses" },
+    { icon: <GraduationCap size={20} />, label: "Students", to: "/admin/students" },
+    { icon: <Users size={20} />, label: "Instructors", to: "/admin/instructors" },
+    { icon: <MonitorPlay size={20} />, label: "Live Sessions", to: "/admin/live-sessions" },
+    { icon: <MessageSquareText size={20} />, label: "Requests", to: "/admin/requests" },
+  ];
+
   // Check screen size on mount and when window resizes
   useEffect(() => {
     const checkScreenSize = () => {
-      const isSmall = window.innerWidth < 1024; // 1024px is the default lg breakpoint in Tailwind
+      const isSmall = window.innerWidth < 1024; 
       setIsSmallScreen(isSmall);
       
-      // If screen is small, force expanded sidebar
       if (isSmall && isCollapsed) {
         setIsCollapsed(false);
         onCollapse?.(false);
       }
     };
 
-    // Initial check
     checkScreenSize();
-
-    // Add resize listener
     window.addEventListener('resize', checkScreenSize);
-    
-    // Clean up
     return () => window.removeEventListener('resize', checkScreenSize);
   }, [isCollapsed, onCollapse]);
 
   const toggleSidebar = () => {
-    // Only allow collapsing if not on a small screen
     if (isSmallScreen) return;
     
     const newCollapsed = !isCollapsed;
@@ -70,38 +72,17 @@ export function Sidebar({ onCollapse }: SidebarProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-3">
-      <nav className="space-y-1">
-        <SidebarItem 
-          icon={<Home size={20} />} 
-          label="Dashboard"
-          to="/admin" 
-          isCollapsed={isCollapsed} 
-        />
-        <SidebarItem 
-          icon={<Users size={20} />}
-          label="Instructors" 
-          to="/admin/instructors" 
-          isCollapsed={isCollapsed} 
-        />
-        <SidebarItem 
-          icon={<GraduationCap size={20} />}
-          label="Students" 
-          to="/admin/students"
-          isCollapsed={isCollapsed} 
-        />
-        <SidebarItem 
-          icon={<MonitorPlay size={20} />}
-          label="Live Sessions" 
-          to="/admin/live-sessions" 
-          isCollapsed={isCollapsed} 
-        />
-        <SidebarItem 
-          icon={<MessageSquareText size={20} />}
-          label="Requests" 
-          to="/admin/requests" 
-          isCollapsed={isCollapsed} 
-        />
-      </nav>
+        <nav className="space-y-1">
+          {sidebarItems.map((item, index) => (
+            <SidebarItem
+              key={index}
+              icon={item.icon}
+              label={item.label}
+              to={item.to}
+              isCollapsed={isCollapsed}
+            />
+          ))}
+        </nav>
       </div>
 
       <div className={cn(
@@ -109,22 +90,6 @@ export function Sidebar({ onCollapse }: SidebarProps) {
         "flex items-center",
         isCollapsed ? "justify-center" : "justify-between"
       )}>
-        {/* <div className="flex items-center gap-2">
-          <Avatar 
-            src={student?.avatar} 
-            initials={student?.name ? getInitials(student.name) : "??"}
-            className="w-8 h-8 text-xs"
-          />
-          <div className={cn(
-            "overflow-hidden",
-            "transition-all duration-300 delay-100 ease-in-out",
-            isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-          )}>
-            <p className="text-sm font-medium truncate">
-              {student?.name || "Guest User"}
-            </p>
-          </div>
-        </div> */}
       </div>
     </div>
   );

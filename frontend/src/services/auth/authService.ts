@@ -1,6 +1,6 @@
 // src/services/authService.ts
 import { toast } from 'react-toastify';
-import { User } from '../types/user';
+import { User } from '../../types/user';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL + "/auth"
 
