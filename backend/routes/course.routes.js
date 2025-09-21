@@ -36,13 +36,20 @@ router.get('/published', CourseController.getPublishedCourses);
 router.get('/search', CourseController.searchCourses);
 router.get('/instructor/:instructorId', CourseController.getCoursesByInstructor);
 
-// Get course by ID (conditional auth for unpublished courses)
-router.get('/:id', conditionalAuth, CourseController.getCourseById);
+// Public course view (limited data for preview)
+router.get('/:id/public', CourseController.getPublicCourse);
+
 
 // Protected routes (require auth)
 router.use(requireAuth);
 router.use(syncUserData);
 router.use(requireActiveUser);
+
+// Student course view (full data for enrolled students)
+router.get('/:id/student', CourseController.getStudentCourse);
+
+// Full course view (instructor/admin - for management)
+router.get('/:id', CourseController.getCourseById);
 
 // Get all courses (admin/instructor only)
 router.get('/', requireRole(['admin', 'instructor']), CourseController.getAllCourses);
@@ -60,28 +67,22 @@ router.delete('/:id', requireRole(['instructor', 'admin']), CourseController.del
 router.patch('/:id/publish', requireRole(['instructor', 'admin']), CourseController.publishCourse);
 router.patch('/:id/unpublish', requireRole(['instructor', 'admin']), CourseController.unpublishCourse);
 
-// Enroll student (authenticated users only)
-router.post('/:id/enroll', CourseController.enrollStudent);
-
 // ===== CHAPTER ROUTES =====
-// Create chapter (instructor/admin only - ownership checked in controller)
+// create/update/delete chapter (instructor/admin only - ownership checked in controller)
 router.post('/:courseId/chapters', requireRole(['instructor', 'admin']), CourseController.createChapter);
-
-// Update chapter (instructor/admin only - ownership checked in controller)
 router.put('/:courseId/chapters/:chapterId', requireRole(['instructor', 'admin']), CourseController.updateChapter);
+router.delete('/:courseId/chapters/:chapterId', requireRole(['instructor', 'admin']), CourseController.deleteChapter);
 
 // ===== SECTION ROUTES =====
-// Create section (instructor/admin only - ownership checked in controller)
+// create/update/delete section (instructor/admin only - ownership checked in controller)
 router.post('/:courseId/chapters/:chapterId/sections', requireRole(['instructor', 'admin']), CourseController.createSection);
-
-// Update section (instructor/admin only - ownership checked in controller)
 router.put('/:courseId/chapters/:chapterId/sections/:sectionId', requireRole(['instructor', 'admin']), CourseController.updateSection);
+router.delete('/:courseId/chapters/:chapterId/sections/:sectionId', requireRole(['instructor', 'admin']), CourseController.deleteSection);
 
 // ===== VIDEO LESSON ROUTES =====
-// Create video lesson (instructor/admin only - ownership checked in controller)
+// create/update/delete video lesson (instructor/admin only - ownership checked in controller)
 router.post('/:courseId/chapters/:chapterId/sections/:sectionId/lessons', requireRole(['instructor', 'admin']), CourseController.createVideoLesson);
-
-// Update video lesson (instructor/admin only - ownership checked in controller)
 router.put('/:courseId/chapters/:chapterId/sections/:sectionId/lessons/:lessonId', requireRole(['instructor', 'admin']), CourseController.updateVideoLesson);
+router.delete('/:courseId/chapters/:chapterId/sections/:sectionId/lessons/:lessonId', requireRole(['instructor', 'admin']), CourseController.deleteVideoLesson);
 
 module.exports = router;

@@ -1,5 +1,6 @@
 const Request = require('../models/Request');
 const Student = require('../models/Student');
+const Course = require('../models/Course');
 
 class RequestController {
   static async getAllRequests(req, res) {
@@ -287,6 +288,7 @@ class RequestController {
             }
             
             student.enrolledCourses.push(courseData);
+            existingCourse.incrementEnrolledStudents();
           }
           break;
 

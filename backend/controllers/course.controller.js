@@ -81,7 +81,128 @@ class CourseController {
       });
     }
   }
+
+  static async getPublishedCourses(req, res) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+      
+      const courses = await Course.findPublished()
+        .select('-chapters')
+        .skip(skip)
+        .limit(limit)
+        .sort({ publishedAt: -1 });
+      
+      const total = await Course.countDocuments({ isPublished: true });
+      
+      res.json({
+        success: true,
+        courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Get published courses error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch published courses'
+      });
+    }
+  }
   
+  // PUBLIC COURSE VIEW - Limited data for preview
+  static async getPublicCourse(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const course = await Course.findById(id);
+      
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          error: 'Course not found'
+        });
+      }
+
+      if (!course.isPublished) {
+        return res.status(404).json({
+          success: false,
+          error: 'Course not found'
+        });
+      }
+
+      // Filter course data for public access
+      const publicCourse = CourseController.filterCourseForPublic(course.toObject());
+      
+      res.json({
+        success: true,
+        course: publicCourse,
+        accessLevel: 'public'
+      });
+    } catch (error) {
+      console.error('Get public course error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch course'
+      });
+    }
+  }
+
+  // STUDENT COURSE VIEW - Full data for enrolled students
+  static async getStudentCourse(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = req.user._id.toString();
+      
+      const course = await Course.findById(id);
+      
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          error: 'Course not found'
+        });
+      }
+
+      if (!course.isPublished) {
+        return res.status(403).json({
+          success: false,
+          error: 'Course is not available'
+        });
+      }
+
+      // Check if student has access to this course
+      const student = await Student.findByUserId(userId);
+      if (!student || !student.hasAccessToCourse(id)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied. You are not enrolled in this course.'
+        });
+      }
+
+      // Get student progress
+      const progress = student.getCourseProgress(id);
+      
+      res.json({
+        success: true,
+        course: course.toObject(),
+        progress: progress,
+        accessLevel: 'student'
+      });
+    } catch (error) {
+      console.error('Get student course error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch course'
+      });
+    }
+  }
+
+  // INSTRUCTOR/ADMIN COURSE VIEW - Full management access
   static async getCourseById(req, res) {
     try {
       const { id } = req.params;
@@ -95,9 +216,8 @@ class CourseController {
         });
       }
       
-      // If course is not published, check if user has permission to view it
+      // Check if user has permission to view unpublished course
       if (!course.isPublished) {
-        // Check if user is authenticated
         if (!req.user) {
           return res.status(403).json({
             success: false,
@@ -105,7 +225,6 @@ class CourseController {
           });
         }
         
-        // Check if user is admin or the instructor of the course
         if (req.user.role !== 'admin' && 
             req.user.role !== 'instructor' && 
             course.instructorId !== req.user._id.toString()) {
@@ -118,13 +237,94 @@ class CourseController {
       
       res.json({
         success: true,
-        course
+        course,
+        accessLevel: 'full'
       });
     } catch (error) {
       console.error('Get course error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to fetch course'
+      });
+    }
+  }
+  
+  static async getCoursesByInstructor(req, res) {
+    try {
+      const { instructorId } = req.params;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+      
+      const courses = await Course.findByInstructor(instructorId)
+        .select('-chapters')
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 });
+      
+      const total = await Course.countDocuments({ instructorId });
+      
+      res.json({
+        success: true,
+        courses,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Get instructor courses error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch instructor courses'
+      });
+    }
+  }
+  
+  static async searchCourses(req, res) {
+    try {
+      const { query, level, tag } = req.query;
+      
+      if (!query || query.length < 2) {
+        return res.status(400).json({
+          success: false,
+          error: 'Search query must be at least 2 characters'
+        });
+      }
+      
+      let searchQuery = {
+        $or: [
+          { title: { $regex: query, $options: 'i' } },
+          { description: { $regex: query, $options: 'i' } },
+          { tags: { $regex: query, $options: 'i' } }
+        ],
+        isPublished: true
+      };
+      
+      if (level) {
+        searchQuery.level = level;
+      }
+      
+      if (tag) {
+        searchQuery.tags = { $in: [tag] };
+      }
+      
+      const courses = await Course.find(searchQuery)
+        .select('-chapters')
+        .sort({ enrolledStudents: -1, publishedAt: -1 });
+      
+      res.json({
+        success: true,
+        courses,
+        count: courses.length
+      });
+    } catch (error) {
+      console.error('Search courses error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to search courses'
       });
     }
   }
@@ -329,154 +529,6 @@ class CourseController {
     }
   }
   
-  static async getPublishedCourses(req, res) {
-    try {
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-      
-      const courses = await Course.findPublished()
-        .select('-chapters')
-        .skip(skip)
-        .limit(limit)
-        .sort({ publishedAt: -1 });
-      
-      const total = await Course.countDocuments({ isPublished: true });
-      
-      res.json({
-        success: true,
-        courses,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      });
-    } catch (error) {
-      console.error('Get published courses error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch published courses'
-      });
-    }
-  }
-  
-  static async getCoursesByInstructor(req, res) {
-    try {
-      const { instructorId } = req.params;
-      const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 10;
-      const skip = (page - 1) * limit;
-      
-      const courses = await Course.findByInstructor(instructorId)
-        .select('-chapters')
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 });
-      
-      const total = await Course.countDocuments({ instructorId });
-      
-      res.json({
-        success: true,
-        courses,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      });
-    } catch (error) {
-      console.error('Get instructor courses error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch instructor courses'
-      });
-    }
-  }
-  
-  static async searchCourses(req, res) {
-    try {
-      const { query, level, tag } = req.query;
-      
-      if (!query || query.length < 2) {
-        return res.status(400).json({
-          success: false,
-          error: 'Search query must be at least 2 characters'
-        });
-      }
-      
-      let searchQuery = {
-        $or: [
-          { title: { $regex: query, $options: 'i' } },
-          { description: { $regex: query, $options: 'i' } },
-          { tags: { $regex: query, $options: 'i' } }
-        ],
-        isPublished: true
-      };
-      
-      if (level) {
-        searchQuery.level = level;
-      }
-      
-      if (tag) {
-        searchQuery.tags = { $in: [tag] };
-      }
-      
-      const courses = await Course.find(searchQuery)
-        .select('-chapters')
-        .sort({ enrolledStudents: -1, publishedAt: -1 });
-      
-      res.json({
-        success: true,
-        courses,
-        count: courses.length
-      });
-    } catch (error) {
-      console.error('Search courses error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to search courses'
-      });
-    }
-  }
-  
-  static async enrollStudent(req, res) {
-    try {
-      const { id } = req.params;
-      
-      const course = await Course.findById(id);
-      
-      if (!course) {
-        return res.status(404).json({
-          success: false,
-          error: 'Course not found'
-        });
-      }
-      
-      if (!course.isPublished) {
-        return res.status(400).json({
-          success: false,
-          error: 'Course is not published'
-        });
-      }
-      
-      await course.incrementEnrolledStudents();
-      
-      res.json({
-        success: true,
-        message: 'Student enrolled successfully',
-        enrolledStudents: course.enrolledStudents
-      });
-    } catch (error) {
-      console.error('Enroll student error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to enroll student'
-      });
-    }
-  }
 
   // ===== CHAPTER METHODS =====
 
@@ -588,6 +640,71 @@ class CourseController {
       res.status(500).json({
         success: false,
         error: 'Failed to update chapter'
+      });
+    }
+  }
+
+  static async deleteChapter(req, res) {
+    try {
+      const { courseId, chapterId } = req.params;
+      
+      const course = await Course.findById(courseId);
+      
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          error: 'Course not found'
+        });
+      }
+      
+      // Check if user is the instructor or admin
+      if (course.instructorId !== req.user._id.toString() && req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied'
+        });
+      }
+      
+      const chapterIndex = course.chapters.findIndex(chapter => chapter._id.toString() === chapterId);
+      
+      if (chapterIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          error: 'Chapter not found'
+        });
+      }
+      
+      // Remove the chapter
+      const deletedChapter = course.chapters[chapterIndex];
+      course.chapters.splice(chapterIndex, 1);
+      
+      // Update total lessons count after removing chapter
+      course.totalLessons = course.chapters.reduce((total, ch) => {
+        return total + ch.sections.reduce((sectionTotal, sec) => {
+          return sectionTotal + sec.lessons.length;
+        }, 0);
+      }, 0);
+      
+      // Reorder positions for remaining chapters
+      course.chapters.forEach((chapter, index) => {
+        chapter.position = index + 1;
+      });
+      
+      await course.save();
+      
+      res.json({
+        success: true,
+        message: 'Chapter deleted successfully',
+        deletedChapter: {
+          id: deletedChapter._id,
+          title: deletedChapter.title
+        }
+      });
+    } catch (error) {
+      console.error('Delete chapter error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete chapter'
       });
     }
   }
@@ -720,6 +837,80 @@ class CourseController {
       res.status(500).json({
         success: false,
         error: 'Failed to update section'
+      });
+    }
+  }
+
+  static async deleteSection(req, res) {
+    try {
+      const { courseId, chapterId, sectionId } = req.params;
+      
+      const course = await Course.findById(courseId);
+      
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          error: 'Course not found'
+        });
+      }
+      
+      // Check if user is the instructor or admin
+      if (course.instructorId !== req.user._id.toString() && req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied'
+        });
+      }
+      
+      const chapter = course.getChapterById(chapterId);
+      
+      if (!chapter) {
+        return res.status(404).json({
+          success: false,
+          error: 'Chapter not found'
+        });
+      }
+      
+      const sectionIndex = chapter.sections.findIndex(section => section._id.toString() === sectionId);
+      
+      if (sectionIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          error: 'Section not found'
+        });
+      }
+      
+      // Remove the section
+      const deletedSection = chapter.sections[sectionIndex];
+      chapter.sections.splice(sectionIndex, 1);
+      
+      // Update total lessons count after removing section
+      course.totalLessons = course.chapters.reduce((total, ch) => {
+        return total + ch.sections.reduce((sectionTotal, sec) => {
+          return sectionTotal + sec.lessons.length;
+        }, 0);
+      }, 0);
+      
+      // Reorder positions for remaining sections
+      chapter.sections.forEach((section, index) => {
+        section.position = index + 1;
+      });
+      
+      await course.save();
+      
+      res.json({
+        success: true,
+        message: 'Section deleted successfully',
+        deletedSection: {
+          id: deletedSection._id,
+          title: deletedSection.title
+        }
+      });
+    } catch (error) {
+      console.error('Delete section error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete section'
       });
     }
   }
@@ -863,6 +1054,128 @@ class CourseController {
       });
     }
   }
+
+  static async deleteVideoLesson(req, res) {
+    try {
+      const { courseId, chapterId, sectionId, lessonId } = req.params;
+      
+      const course = await Course.findById(courseId);
+      
+      if (!course) {
+        return res.status(404).json({
+          success: false,
+          error: 'Course not found'
+        });
+      }
+      
+      // Check if user is the instructor or admin
+      if (course.instructorId !== req.user._id.toString() && req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied'
+        });
+      }
+      
+      const chapter = course.getChapterById(chapterId);
+      
+      if (!chapter) {
+        return res.status(404).json({
+          success: false,
+          error: 'Chapter not found'
+        });
+      }
+      
+      const section = chapter.sections.find(section => section._id.toString() === sectionId);
+      
+      if (!section) {
+        return res.status(404).json({
+          success: false,
+          error: 'Section not found'
+        });
+      }
+      
+      const lessonIndex = section.lessons.findIndex(lesson => lesson._id.toString() === lessonId);
+      
+      if (lessonIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          error: 'Video lesson not found'
+        });
+      }
+      
+      // Remove the lesson
+      const deletedLesson = section.lessons[lessonIndex];
+      section.lessons.splice(lessonIndex, 1);
+      
+      // Update total lessons count after removing lesson
+      course.totalLessons = course.chapters.reduce((total, ch) => {
+        return total + ch.sections.reduce((sectionTotal, sec) => {
+          return sectionTotal + sec.lessons.length;
+        }, 0);
+      }, 0);
+      
+      // Reorder positions for remaining lessons
+      section.lessons.forEach((lesson, index) => {
+        lesson.position = index + 1;
+      });
+      
+      await course.save();
+      
+      res.json({
+        success: true,
+        message: 'Video lesson deleted successfully',
+        deletedLesson: {
+          id: deletedLesson._id,
+          title: deletedLesson.title
+        }
+      });
+    } catch (error) {
+      console.error('Delete video lesson error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete video lesson'
+      });
+    }
+  }
+
+
+  // ===== HELPER METHODS =====
+
+  // Filter course data for public access (removes sensitive content)
+  static filterCourseForPublic(course) {
+    const publicCourse = { ...course };
+
+    // Remove resources and video URLs from chapters, keep only preview videos
+    if (publicCourse.chapters) {
+      publicCourse.chapters = publicCourse.chapters.map(chapter => ({
+        ...chapter,
+        ressources: undefined, // Remove chapter resources
+        sections: chapter.sections?.map(section => ({
+          ...section,
+          lessons: section.lessons?.map(lesson => ({
+            ...lesson,
+            videoUrl: lesson.preview ? lesson.videoUrl : undefined, // Only preview videos
+          }))
+        }))
+      }));
+    }
+
+    // Remove sensitive data from live sessions
+    if (publicCourse.LiveSessions) {
+      publicCourse.LiveSessions = publicCourse.LiveSessions.map(session => ({
+        title: session.title,
+        date: session.date,
+        duration: session.duration,
+        // Remove resources, links, and notes
+        ressources: undefined,
+        link: undefined,
+        note: undefined
+      }));
+    }
+
+    return publicCourse;
+  }
+
 }
 
 module.exports = CourseController;
