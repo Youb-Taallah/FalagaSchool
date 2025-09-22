@@ -13,9 +13,6 @@ interface CurrentCourseState {
   setCurrentSection: (sectionId: string) => void;
   setCurrentLesson: (lessonId: string) => void;
   toggleSectionExpanded: (sectionId: string) => void;
-  markLessonAsCompleted: (lessonId: string) => void;
-  getProgress: () => { percentage: number; completed: number; total: number };
-  getChapterProgress: (chapterId: string) => { percentage: number; completed: number; total: number };
   getCurrentChapter: () => Chapter | null;
   getCurrentSection: () => Section | null;
   getCurrentLesson: () => VideoLesson | null;
@@ -32,15 +29,15 @@ export const useCurrentCourseStore = create<CurrentCourseState>((set, get) => ({
     set({ 
       course,
       // Reset states when course changes
-      currentChapterId: course.chapters.length > 0 ? course.chapters[0].id : null,
+      currentChapterId: course.chapters.length > 0 ? course.chapters[0]._id : null,
       currentSectionId: course.chapters.length > 0 && course.chapters[0].sections.length > 0 ? 
-        course.chapters[0].sections[0].id : null,
+        course.chapters[0].sections[0]._id : null,
       currentLessonId: course.chapters.length > 0 && 
         course.chapters[0].sections.length > 0 &&
         course.chapters[0].sections[0].lessons.length > 0 ?
-        course.chapters[0].sections[0].lessons[0].id : null,
+        course.chapters[0].sections[0].lessons[0]._id : null,
       expandedSections: course.chapters.length > 0 && course.chapters[0].sections.length > 0 ? 
-        [course.chapters[0].sections[0].id] : [],
+        [course.chapters[0].sections[0]._id] : [],
     });
   },
   
@@ -48,7 +45,7 @@ export const useCurrentCourseStore = create<CurrentCourseState>((set, get) => ({
     const { course } = get();
     if (!course) return;
 
-    const chapter = course.chapters.find(ch => ch.id === chapterId);
+    const chapter = course.chapters.find(ch => ch._id === chapterId);
     if (!chapter) return;
 
     const firstSection = chapter.sections[0];
@@ -56,9 +53,9 @@ export const useCurrentCourseStore = create<CurrentCourseState>((set, get) => ({
 
     set({
       currentChapterId: chapterId,
-      currentSectionId: firstSection?.id || null,
-      currentLessonId: firstLesson?.id || null,
-      expandedSections: firstSection ? [firstSection.id] : []
+      currentSectionId: firstSection?._id || null,
+      currentLessonId: firstLesson?._id || null,
+      expandedSections: firstSection ? [firstSection._id] : []
     });
   },
   
@@ -66,15 +63,15 @@ export const useCurrentCourseStore = create<CurrentCourseState>((set, get) => ({
     const { course, currentChapterId } = get();
     if (!course || !currentChapterId) return;
     
-    const chapter = course.chapters.find(ch => ch.id === currentChapterId);
+    const chapter = course.chapters.find(ch => ch._id === currentChapterId);
     if (!chapter) return;
 
-    const section = chapter.sections.find(s => s.id === sectionId);
+    const section = chapter.sections.find(s => s._id === sectionId);
     if (!section) return;
     
     set({ 
       currentSectionId: sectionId,
-      currentLessonId: section.lessons.length > 0 ? section.lessons[0].id : null,
+      currentLessonId: section.lessons.length > 0 ? section.lessons[0]._id : null,
       expandedSections: [...get().expandedSections, sectionId]
     });
   },
@@ -85,15 +82,15 @@ export const useCurrentCourseStore = create<CurrentCourseState>((set, get) => ({
     
     // Find which chapter and section this lesson belongs to
     for (const chapter of course.chapters) {
-      if (chapter.id !== currentChapterId) continue;
+      if (chapter._id !== currentChapterId) continue;
       
       for (const section of chapter.sections) {
-        const lesson = section.lessons.find(l => l.id === lessonId);
+        const lesson = section.lessons.find(l => l._id === lessonId);
         if (lesson) {
           set({ 
-            currentSectionId: section.id,
+            currentSectionId: section._id,
             currentLessonId: lessonId,
-            expandedSections: [...get().expandedSections.filter(id => id !== section.id), section.id]
+            expandedSections: [...get().expandedSections.filter(id => id !== section._id), section._id]
           });
           return;
         }
@@ -110,95 +107,33 @@ export const useCurrentCourseStore = create<CurrentCourseState>((set, get) => ({
     }
   },
   
-  markLessonAsCompleted: (lessonId) => {
-    const { course, currentChapterId } = get();
-    if (!course || !currentChapterId) return;
-    
-    const updatedCourse = { ...course };
-    
-    for (const chapter of updatedCourse.chapters) {
-      if (chapter.id !== currentChapterId) continue;
-      
-      for (const section of chapter.sections) {
-        const lessonIndex = section.lessons.findIndex(l => l.id === lessonId);
-        if (lessonIndex !== -1) {
-          section.lessons[lessonIndex] = {
-            ...section.lessons[lessonIndex],
-            completed: true
-          };
-          set({ course: updatedCourse });
-          return;
-        }
-      }
-    }
-  },
-  
-  getProgress: () => {
-    const { course } = get();
-    if (!course) return { percentage: 0, completed: 0, total: 0 };
-    
-    let completed = 0;
-    let total = 0;
-    
-    course.chapters.forEach(chapter => {
-      chapter.sections.forEach(section => {
-        total += section.lessons.length;
-        completed += section.lessons.filter(lesson => lesson.completed).length;
-      });
-    });
-    
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    return { percentage, completed, total };
-  },
-  
-  getChapterProgress: (chapterId) => {
-    const { course } = get();
-    if (!course) return { percentage: 0, completed: 0, total: 0 };
-    
-    const chapter = course.chapters.find(ch => ch.id === chapterId);
-    if (!chapter) return { percentage: 0, completed: 0, total: 0 };
-    
-    let completed = 0;
-    let total = 0;
-    
-    chapter.sections.forEach(section => {
-      total += section.lessons.length;
-      completed += section.lessons.filter(lesson => lesson.completed).length;
-    });
-    
-    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    
-    return { percentage, completed, total };
-  },
-  
   getCurrentChapter: () => {
     const { course, currentChapterId } = get();
     if (!course || !currentChapterId) return null;
     
-    return course.chapters.find(chapter => chapter.id === currentChapterId) || null;
+    return course.chapters.find(chapter => chapter._id === currentChapterId) || null;
   },
   
   getCurrentSection: () => {
     const { course, currentChapterId, currentSectionId } = get();
     if (!course || !currentChapterId || !currentSectionId) return null;
     
-    const chapter = course.chapters.find(ch => ch.id === currentChapterId);
+    const chapter = course.chapters.find(ch => ch._id === currentChapterId);
     if (!chapter) return null;
     
-    return chapter.sections.find(section => section.id === currentSectionId) || null;
+    return chapter.sections.find(section => section._id === currentSectionId) || null;
   },
   
   getCurrentLesson: () => {
     const { course, currentChapterId, currentSectionId, currentLessonId } = get();
     if (!course || !currentChapterId || !currentSectionId || !currentLessonId) return null;
     
-    const chapter = course.chapters.find(ch => ch.id === currentChapterId);
+    const chapter = course.chapters.find(ch => ch._id === currentChapterId);
     if (!chapter) return null;
     
-    const section = chapter.sections.find(s => s.id === currentSectionId);
+    const section = chapter.sections.find(s => s._id === currentSectionId);
     if (!section) return null;
     
-    return section.lessons.find(lesson => lesson.id === currentLessonId) || null;
+    return section.lessons.find(lesson => lesson._id === currentLessonId) || null;
   }
 }));
