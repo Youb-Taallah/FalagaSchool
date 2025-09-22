@@ -10,7 +10,7 @@ interface AvatarProps {
 export function Avatar({ src, alt = 'Avatar', initials, className }: AvatarProps) {
   return (
     <div className={cn(
-      "relative inline-block rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center",
+      "relative rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center",
       className
     )}>
       {src ? (
