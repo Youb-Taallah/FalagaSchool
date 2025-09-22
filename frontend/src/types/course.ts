@@ -17,7 +17,7 @@ export interface VideoLesson {
   title: string;
   description?: string;
   duration: string; // Format: "MM:SS"
-  videoUrl: string;
+  videoUrl?: string;
   preview: boolean;
 }
 
@@ -58,7 +58,7 @@ export interface Course {
   level: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
   duration: string;
   totalLessons: number;
-  chapters: Chapter[]; // Changed from sections to chapters
+  chapters?: Chapter[]; // Changed from sections to chapters
   tags: string[];
   requirements: string[];
   whatYouWillLearn: string[];

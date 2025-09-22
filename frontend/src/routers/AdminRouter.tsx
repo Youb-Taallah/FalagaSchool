@@ -5,6 +5,7 @@ import { HomePage } from '../pages/student/HomePage';
 import RequestsPage from '../pages/admin/Requests';
 import LiveSessionsPage from '../pages/admin/LiveSessions';
 import { BlankPage } from '../pages/admin/BlankPage';
+import Students from '../pages/admin/Students';
 
 
 function StudentRouter() {
@@ -18,7 +19,7 @@ function StudentRouter() {
               <Route path="/requests" element={<RequestsPage />} />
               <Route path="/live-sessions" element={<LiveSessionsPage />} />
               <Route path="/instructors" element={<BlankPage title="Instructors" />} />
-              <Route path="/students" element={<BlankPage title="Students" />} />
+              <Route path="/students" element={<Students/>} />
               <Route path="/courses" element={<BlankPage title="Courses" />} />
               <Route path="*" element={<Navigate to="/404" replace />} />
             </Routes>
