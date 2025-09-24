@@ -617,8 +617,11 @@ class CourseController {
           error: 'Chapter not found'
         });
       }
+
+      
       
       Object.assign(chapter, updateData);
+      console.log("test");
       await course.save();
       
       res.json({
